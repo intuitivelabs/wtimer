@@ -52,16 +52,18 @@ func (wt *WTimer) ticker() uint64 {
 	runTicks := wt.Now().Sub(wt.refTicks)
 	if runTime > wt.Duration(runTicks.AddUint64(1+20)) {
 		if DBGon() {
+			lost, _ := wt.Ticks(runTime - wt.Duration(runTicks))
 			DBG("ticker: lost ticks since start-up: too slow:"+
-				" ticks %d %s time %s\n",
-				runTicks.Val(), wt.Duration(runTicks), runTime)
+				" ticks diff %d = %s, but time diff %s => lost %d ticks\n",
+				runTicks.Val(), wt.Duration(runTicks), runTime, lost.Val())
 		}
 	} else if runTicks.Val() > 1 &&
 		runTime < wt.Duration(runTicks.SubUint64(1)) {
 		if DBGon() {
+			faster, _ := wt.Ticks(wt.Duration(runTicks) - runTime)
 			DBG("ticker: lost ticks since start-up: too fast:"+
-				" ticks %d %s time %s\n",
-				runTicks.Val(), wt.Duration(runTicks), runTime)
+				" ticks diff %d = %s time  diff %s => faster with %d ticks\n",
+				runTicks.Val(), wt.Duration(runTicks), runTime, faster.Val())
 		}
 	}
 	diff := now.Sub(wt.lastTickT)
