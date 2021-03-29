@@ -4,6 +4,9 @@
 // that can be found in the LICENSE.txt file in the root of the source
 // tree.
 
+// Package wtimer provides a high performance hierarchical timer wheel
+// timers implementation, optimised for high number of timers (100k+)
+// with relatively lower precision requirement.
 package wtimer
 
 import (
