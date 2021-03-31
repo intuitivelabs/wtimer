@@ -36,9 +36,10 @@ func (wt *WTimer) Start() {
 	wt.wg.Add(1)
 	go func() {
 		defer wt.wg.Done()
-		if DBGon() {
-			DBG("starting ticker with %s at %s\n", wt.tickDuration, time.Now())
-		}
+		//		if DBGon() {
+		//			DBG("starting ticker with %s at %s\n",
+		//				wt.tickDuration, time.Now())
+		//		}
 		wt.lastTickT = timestamp.Now()
 		wt.refTS = wt.lastTickT
 		ticker := time.NewTicker(wt.tickDuration)
@@ -46,7 +47,7 @@ func (wt *WTimer) Start() {
 		for {
 			select {
 			case <-wt.cancel:
-				DBG("canceled\n")
+				// DBG("canceled\n")
 				break loop
 			case _, ok := <-ticker.C:
 				if !ok {
