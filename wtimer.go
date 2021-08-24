@@ -531,7 +531,7 @@ retry:
 			// not in Race ok or force mode => exit on delete in progress
 			wt.unlock()
 			if delF&fDelAlreadyOk != 0 {
-				// timer marked for delete -> return current delete statey
+				// timer marked for delete -> return current delete strategy
 				return (flags&fRemoved != 0), nil
 			}
 			if DBGon() {
