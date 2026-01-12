@@ -11,3 +11,4 @@ TAGS
 *.tar.gz
 *.deb
 *.rpm
+*.bak

@@ -141,12 +141,15 @@ type WTimer struct {
 	rQrunning [runQueuesNo]*TimerLnk // current running handler
 
 	tickDuration time.Duration
-	nowTicks     uint64 // current ticks as uint64 (atomic access)
+	nowTicks     atomic.Uint64 // current ticks as uint64 (atomic access)
 
-	lastTickT timestamp.TS // last time we updated the ticks
-	badTime   uint32       // count time going backwards
-	refTS     timestamp.TS // reference time stamp (for refTicks)
-	refTicks  Ticks        // reference ticks value at start-up or re-adj.
+	lastTickT timestamp.TS // last time we updated the ticks (ticker use only)
+	badTime   uint32       // count time going backwards (ticker use only)
+
+	// reference values protected by seqlock (single writer, multiple readers)
+	refSeq   atomic.Uint64 // seqlock sequence number (odd = write in progress)
+	refTS    timestamp.TS  // reference time stamp (for refTicks)
+	refTicks uint64        // reference ticks value at start-up or re-adj.
 
 	wg     sync.WaitGroup // wait group for all the go routines started
 	cancel chan struct{}  // used to stop all go routines
@@ -197,13 +200,93 @@ func (wt *WTimer) Init(td time.Duration) error {
 
 // Now returns the current wt time in ticks.
 func (wt *WTimer) Now() Ticks {
-	crtTicks := atomic.LoadUint64(&wt.nowTicks)
+	crtTicks := wt.nowTicks.Load()
 	return NewTicks(crtTicks)
+}
+
+// refBeginWrite starts a write to refTS/refTicks (seqlock writer side).
+// Single writer only - no locking needed on writer side.
+func (wt *WTimer) refBeginWrite() {
+	wt.refSeq.Add(1) // odd = write in progress
+}
+
+// refEndWrite completes a write to refTS/refTicks (seqlock writer side).
+func (wt *WTimer) refEndWrite() {
+	wt.refSeq.Add(1) // even = write complete
+}
+
+// refWrite atomically updates both refTS and refTicks using seqlock.
+// Single writer only.
+func (wt *WTimer) refWrite(ts timestamp.TS, ticks uint64) {
+	wt.refBeginWrite()
+	// NOTE: Go race detector may report a data race here. This is a false
+	// positive - the seqlock ensures readers detect concurrent writes via
+	// the sequence number and retry until they get a consistent snapshot.
+	wt.refTS = ts
+	wt.refTicks = ticks
+	wt.refEndWrite()
+}
+
+// Returns the reference timestamp
+// (timestamp used for computing computing ticks expire values)
+func (wt *WTimer) RefTS() timestamp.TS {
+	ts, _ := wt.RefTvals()
+	return ts
+}
+
+func (wt *WTimer) RefTicks() Ticks {
+	_, ticks := wt.RefTvals()
+	return ticks
+}
+
+// RefTvals returns both the reference timestamp and ticks.
+// (RefTS() and RefTicks() atomically)
+func (wt *WTimer) RefTvals() (timestamp.TS, Ticks) {
+	retries := 0
+	for {
+		seq1 := wt.refSeq.Load()
+		if seq1&1 != 0 {
+			// write in progress, spin
+			retries++
+			if retries > 5 {
+				runtime.Gosched()
+			}
+			continue
+		}
+		// NOTE: Go race detector may report a data race here. This is a false
+		// positive - if a write occurs during these reads, seq2 != seq1 and
+		// we retry, ensuring we always return a consistent snapshot.
+		rts := wt.refTS
+		rticks := wt.refTicks
+		seq2 := wt.refSeq.Load()
+		if seq1 == seq2 {
+			return rts, NewTicks(rticks)
+		}
+		// sequence changed during read, retry
+		retries++
+		if retries > 5 {
+			runtime.Gosched()
+		}
+	}
+}
+
+// Timestamp returns the timestamp corresponding to a ticks value
+// returned by Now() or TimerLnk.Exp()
+func (wt *WTimer) Timestamp(t Ticks) timestamp.TS {
+	refTS, refTicks := wt.RefTvals()
+	elapsed := t.Sub(refTicks)
+	return refTS.Add(wt.Duration(elapsed))
+}
+
+// Expire returns the timestamp corresponding to the internal TimerLnk
+// expire ticks value.
+func (wt *WTimer) Expire(ti *TimerLnk) timestamp.TS {
+	return wt.Timestamp(ti.Exp())
 }
 
 // internal crt. ticks++
 func (wt *WTimer) incTime() {
-	atomic.AddUint64(&wt.nowTicks, 1)
+	wt.nowTicks.Add(1)
 }
 
 // Ticks returns the duration d converted to Ticks (round-down) and
@@ -331,7 +414,8 @@ func (wt *WTimer) addUnsafe(tl *TimerLnk, now Ticks) error {
 	// time and ticks value, thus latencies would only delay timers that were
 	// supposed to execute during the latency interval, but avoid
 	// executing any timer too early.
-	expIntvl := timestamp.Now().Sub(wt.refTS) + tl.intvl
+	refTS, refTicks := wt.RefTvals()
+	expIntvl := timestamp.Now().Sub(refTS) + tl.intvl
 	// round-up if 0 expire or if expire in-between ticks
 	// (round-up almost always, better to expire 1 tick later then
 	//   1 tick too soon)
@@ -344,7 +428,7 @@ func (wt *WTimer) addUnsafe(tl *TimerLnk, now Ticks) error {
 			dticks.Val(), MaxTicksDiff)
 		return ErrTicksTooHigh
 	}
-	tl.expire = wt.refTicks.Add(dticks)
+	tl.expire = refTicks.Add(dticks)
 	//tl.expire = now.Add(delta)
 	w, idx := getWheelPos(tl.expire, now)
 	if w == wheelExp && DBGon() {
@@ -558,6 +642,19 @@ retry:
 		// (it might have changed in parallel with wt.lock() see above)
 		if tl.info.flags()&fRunning != 0 {
 			// running cannot be deleted, no error
+			// 2 cases: 1. timer running in this moment -> cannot delete
+			//          2. timer already ran and ended with rearm == false
+			//              -> timer is already removed from all the lists
+			//             and cannot be deleted again
+			// There is no way to distinguish between the 2 cases
+			// (because an exited non-rearming timer might have destroyed
+			//  itself in the handler so marking it in some way is not safe)
+			// TODO: remove DBG
+			/*
+			DBG("XXX: trying to delete running or finished timer %p on wheelNone,"+
+				" flags: 0x%0x wheel %d wheelNone %d idx %d\n",
+				tl, tl.info.flags(), wheel, wheelNone, idx)
+			*/
 			if delF&fDelTry == 0 {
 				tl.info.setFlags(fDelete)
 			}

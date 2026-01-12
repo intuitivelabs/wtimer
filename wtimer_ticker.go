@@ -25,8 +25,7 @@ func (wt *WTimer) ticker() uint64 {
 					wt.badTime, wt.lastTickT.Sub(now))
 			}
 			wt.lastTickT = now
-			wt.refTS = wt.lastTickT
-			wt.refTicks = wt.Now()
+			wt.refWrite(wt.lastTickT, wt.Now().Val())
 		} else if DBGon() {
 			DBG("ticker: time going backward with %s (%d times)\n",
 				wt.lastTickT.Sub(now), wt.badTime)
@@ -44,12 +43,11 @@ func (wt *WTimer) ticker() uint64 {
 		// new ref. ts = last tick ts
 		// new ref ticks = current tick - Ticks(now - last tick ts)
 		diff, _ := wt.Ticks(now.Sub(wt.lastTickT))
-		wt.refTS = wt.lastTickT
-		wt.refTicks = wt.Now().Sub(diff)
+		wt.refWrite(wt.lastTickT, wt.Now().Sub(diff).Val())
 	}
 
 	runTime := now.Sub(wt.refTS)
-	runTicks := wt.Now().Sub(wt.refTicks)
+	runTicks := wt.Now().SubUint64(wt.refTicks)
 	if runTime > wt.Duration(runTicks.AddUint64(1+20)) {
 		if DBGon() {
 			lost, _ := wt.Ticks(runTime - wt.Duration(runTicks))
