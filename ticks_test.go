@@ -58,7 +58,7 @@ func tstOp(t *testing.T, p string, v1, v2 uint64) {
 	}
 	if ((v1 >= v2) && ((v1 - v2) < MaxTicksDiff)) ||
 		((v1 < v2) && ((v2 - v1) < MaxTicksDiff)) {
-		// as long as abs(v1-v2) is not bigger then MaxTicksDiff
+		// as long as abs(v1-v2) is not bigger than MaxTicksDiff
 		if t1.NE(t2) != (v1 != v2) {
 			t.Errorf(p+"NE for 0x%x <> 0x%x failed (0x%x, 0x%x)\n",
 				t1.Val(), t2.Val(), v1, v2)

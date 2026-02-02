@@ -59,22 +59,22 @@ var wheelEntries = [WheelsNo]uint16{
 	W3Entries,
 }
 
-// return t corresp. pos in wheel 0
+// return t corresponding pos in wheel 0
 func wheel0Pos(t uint64) uint64 {
 	return t & W0Mask
 }
 
-// return t corresp. pos in wheel 1
+// return t corresponding pos in wheel 1
 func wheel1Pos(t uint64) uint64 {
 	return (t >> W0Bits) & W1Mask
 }
 
-// return t corresp. pos in wheel 2
+// return t corresponding pos in wheel 2
 func wheel2Pos(t uint64) uint64 {
 	return (t >> (W0Bits + W1Bits)) & W2Mask
 }
 
-// return t corresp. pos in wheel 3
+// return t corresponding pos in wheel 3
 func wheel3Pos(t uint64) uint64 {
 	return (t >> (W0Bits + W1Bits + W2Bits)) & W3Mask
 }
@@ -160,22 +160,24 @@ type WTimer struct {
 // when idle (too many wakeups).
 // Example tick values  and cpu usage when idle:
 // (note that cpu frequency scaling was enabled albeit perf. governor)
-//                   100ms =>       0 %cpu idle
-//                    10ms =>       1-1.5% cpu idle
-//                     1ms =>       6-9%  cpu
-//                     0.5ms =>    11% cpu
-//                     0.25ms =>    7-8%   cpu
-//                     0.125ms =>  12-14% cpu
-//                     0.062ms =>  20-22% cpu
-//                     0.031ms =>  23-24% cpu
-//                     0.015ms =>  25-26% cpu
-//                     0.007ms =>  32-34% cpu
-//                     0.003ms =>  65-70% cpu !!!
-//                     0.001ms => 133-135% cpu !!!
+//
+//	100ms =>       0 %cpu idle
+//	 10ms =>       1-1.5% cpu idle
+//	  1ms =>       6-9%  cpu
+//	  0.5ms =>    11% cpu
+//	  0.25ms =>    7-8%   cpu
+//	  0.125ms =>  12-14% cpu
+//	  0.062ms =>  20-22% cpu
+//	  0.031ms =>  23-24% cpu
+//	  0.015ms =>  25-26% cpu
+//	  0.007ms =>  32-34% cpu
+//	  0.003ms =>  65-70% cpu !!!
+//	  0.001ms => 133-135% cpu !!!
 //
 // Under load there doesn't seem  to be too much variance on performance
 // (e..g 100k active timers mostly with 1s to 32s expire, decreasing tick
-//  numbers only minimally influences the total cpu usage).
+//
+//	numbers only minimally influences the total cpu usage).
 func (wt *WTimer) Init(td time.Duration) error {
 	if td < (time.Microsecond) {
 		return errors.New("wtimer.Init: tick duration too small")
@@ -228,7 +230,7 @@ func (wt *WTimer) refWrite(ts timestamp.TS, ticks uint64) {
 }
 
 // Returns the reference timestamp
-// (timestamp used for computing computing ticks expire values)
+// (timestamp used for computing ticks expire values)
 func (wt *WTimer) RefTS() timestamp.TS {
 	ts, _ := wt.RefTvals()
 	return ts
@@ -306,12 +308,12 @@ func (wt *WTimer) Duration(t Ticks) time.Duration {
 }
 
 // TicksRoundUp converts a duration into ticks number rounding-up
-// if the duration is less then 1 tick or if duration >= 0.5 ticks.
+// if the duration is less than 1 tick or if duration >= 0.5 ticks.
 // This is also the way durations are converted to ticks internally.
 func (wt *WTimer) TicksRoundUp(d time.Duration) Ticks {
 	dticks, rest := wt.Ticks(d)
 	if dticks.Val() == 0 || rest >= 50*wt.tickDuration/100 {
-		// round-up if smaller then 1 tick or if value between ticks
+		// round-up if smaller than 1 tick or if value between ticks
 		return dticks.AddUint64(1)
 	}
 	return dticks
@@ -351,7 +353,7 @@ func (wt *WTimer) NewTimer(flags uint8) *TimerLnk {
 //             useful if the handler does lot of work or some potentially
 //             blocking operation). FgoR timers cannot be DelWait()-ed.
 //
-// Do not use on timers that were not deleted, or on timer that finished
+// Do not use on timers that were not deleted, or on a timer that finished
 // (returned false from the handler). A finished timer must be re-initialised.
 func (wt *WTimer) Reset(tl *TimerLnk, flags uint8) error {
 	f := tl.info.flags()
@@ -403,7 +405,7 @@ func (wt *WTimer) addUnsafe(tl *TimerLnk, now Ticks) error {
 		return ErrTicksTooHigh
 	}
 	// adjust expire in ticks since we might be called between ticks
-	// increases and the ticks might increase with more then one.
+	// increases and the ticks might increase with more than one.
 	// Small ticks (duration) combined with scheduling latencies might
 	// cause the ticks numbers (wt.Now())to advance very quickly.
 	// For example latencies of ~20ms with a 1ms time.Ticker are not
@@ -417,7 +419,7 @@ func (wt *WTimer) addUnsafe(tl *TimerLnk, now Ticks) error {
 	refTS, refTicks := wt.RefTvals()
 	expIntvl := timestamp.Now().Sub(refTS) + tl.intvl
 	// round-up if 0 expire or if expire in-between ticks
-	// (round-up almost always, better to expire 1 tick later then
+	// (round-up almost always, better to expire 1 tick later than
 	//   1 tick too soon)
 	// A timer returning 0 expire would never leave the expired list,
 	// being continuously executed (alternative: add another run list
@@ -492,7 +494,7 @@ func (wt *WTimer) addSanityChecks(tl *TimerLnk, delta time.Duration,
 // time.Duration.
 // It returns whether the operation was successful (nil) or an error.
 // tl is a pointer to a TimerLnk structure which should be either provided
-//  or obtained from NewTimer()).
+// or obtained from NewTimer()).
 func (wt *WTimer) Add(tl *TimerLnk, d time.Duration,
 	f TimerHandlerF, p interface{}) error {
 	// extra sanity: could be skipped
@@ -528,7 +530,7 @@ func (wt *WTimer) Add(tl *TimerLnk, d time.Duration,
 // AddT starts a new timer that will run f(tl, ticks, p) after delta ticks.
 // It returns whether the operation was successful (nil) or an error.
 // tl is a pointer to TimerLnk structure which should be either provided
-//  or obtained from NewTimer().
+// or obtained from NewTimer().
 func (wt *WTimer) AddT(tl *TimerLnk, delta Ticks,
 	f TimerHandlerF, p interface{}) error {
 	intvl := wt.Duration(delta)
@@ -541,7 +543,7 @@ func (wt *WTimer) AddT(tl *TimerLnk, delta Ticks,
 // It will not try to do any adjustment to the expire.
 // It returns whether the operation was successful (nil) or an error.
 // tl is a pointer to TimerLnk structure which should be either provided
-//  or obtained from NewTimer().
+// or obtained from NewTimer().
 func (wt *WTimer) AddExpire(tl *TimerLnk, expire Ticks,
 	f TimerHandlerF, p interface{}) error {
 
@@ -623,7 +625,7 @@ retry:
 					" flags 0x%x\n",
 					tl, tl.next, tl.prev, tl.info.flags())
 			}
-			// timer marked for delete -> return current delete statey
+			// timer marked for delete -> return current delete state
 			return (flags&fRemoved != 0), ErrDeletedTimer
 		}
 	}
@@ -900,7 +902,7 @@ func (wt *WTimer) DelWait(tl *TimerLnk) (bool, error) {
 func (wt *WTimer) redistTimer(lst *timerLst, tl *TimerLnk, now Ticks) {
 	expire := tl.expire
 	if expire.LT(now) {
-		BUG("rtimer %p on wheel/idx: %d/%d: expire less then \"now\":"+
+		BUG("rtimer %p on wheel/idx: %d/%d: expire less than \"now\":"+
 			" expire %d now %d (ticks), lst %p \n",
 			tl, lst.wheelNo, lst.wheelIdx, expire.Val(), now.Val(), lst)
 		// try to fix it to expire immediately
@@ -951,7 +953,7 @@ func (wt *WTimer) redistLst(lst *timerLst, now Ticks) {
 // to their expire relative to the current time (passed as the "now" parameter).
 func (wt *WTimer) redistTimers(now Ticks) {
 	t := now.Val()
-	idx0 := wheel0Pos(t) // corresp. pos in wheel 0
+	idx0 := wheel0Pos(t) // corresponding pos in wheel 0
 	if idx0 == 0 {       // multiple of W0Entries => look first in wheel 1
 		idx1 := wheel1Pos(t)
 		if idx1 == 0 {
@@ -1091,7 +1093,7 @@ func (wt *WTimer) processExpired(now Ticks) {
 			sigsNo = runQueuesWorkersNo
 		}
 	runq_signal:
-		// signal the runq workers, but don't send more signals then workers
+		// signal the runq workers, but don't send more signals than workers
 		for i := 0; i < sigsNo; i++ {
 			select {
 			case wt.rQch <- struct{}{}:

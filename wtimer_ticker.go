@@ -66,7 +66,7 @@ func (wt *WTimer) ticker() uint64 {
 	}
 	diff := now.Sub(wt.lastTickT)
 	if diff < wt.tickDuration {
-		// to little time has passed
+		// too little time has passed
 		return 0
 	}
 	ticks, rest := wt.Ticks(diff)

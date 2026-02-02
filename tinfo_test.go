@@ -12,7 +12,7 @@ func TestTinfoConsts(t *testing.T) {
 	fmask := (flgsMask << flgsBpos) | (wNoMask << wNoBpos) | wIdxMask
 	maxVal := (1 << uint64(unsafe.Sizeof(x.atomicV)*8)) - 1
 	if fmask != maxVal {
-		t.Errorf("max val does not corresp. to full maks: 0x%x <> 0x%x\n",
+		t.Errorf("max val does not correspond to full mask: 0x%x <> 0x%x\n",
 			maxVal, fmask)
 	}
 }

@@ -12,3 +12,5 @@ TAGS
 *.deb
 *.rpm
 *.bak
+# Go workspace
+go.work

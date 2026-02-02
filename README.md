@@ -4,7 +4,7 @@
 
 The wtimer package provides a timer implementation using a hierarchical timer
  wheel (see
-G. Varghese, T. Lauck,  Hashed and Hierarchical Timing Wheels: Efficient
+G. Varghese, T. Lauck, Hashed and Hierarchical Timing Wheels: Efficient
       Data Structures for Implementing a Timer Facility, 1996 ).
 
 It is optimised for high number of timers (100k+) with relatively lower
@@ -23,7 +23,7 @@ The timers use a 4 level hierarchical timing wheel. Small timeouts will go
  in the first wheel.
 Each wheel acts as circular buffer, the current position corresponding to the
  current time ("normalised" to that wheel level:
- (time >> sum(previous wheels bits) & wheel\_mask) >> wheel\_bits).
+ (time >> sum(previous wheels bits) & wheel_mask) >> wheel_bits).
 
 Each time the current ticks are a multiple of a wheel range, the corresponding
  wheel current position list will be re-distributed to the wheel before it
@@ -38,8 +38,8 @@ Timers can be added and stopped dynamically, one shot and periodic timers
 are supported.
 
 Timers can be configured individually to be executed by a fixed group of
- separate go routines "workers" (default), in a new temporary go routine or
- in the main timer context (this options is for timers that execute really
+ separate goroutines "workers" (default), in a new temporary goroutine or
+ in the main timer context (this option is for timers that execute really
  fast and need a bit lower latency).
 
 There are two ways to use the wtimer package: configure it to automatically
@@ -62,7 +62,7 @@ All the timeouts will be rounded to ticks duration multiples (see
  wtimer.TicksRoundUp() for details). 0 timeouts are not allowed and will
   be all rounded to 1 tick.
 
-Ticks values smaller then 50ms will cause some visible cpu usage when idle.
+Ticks values smaller than 50ms will cause some visible cpu usage when idle.
 Some orientative numbers (measured with cpu frequency scaling enabled):
 
 ```
@@ -114,7 +114,7 @@ func timeoutHandler(wt *wtimer.WTimer, h *wtimer.TimerLnk,
 		return false, 0 // don't re-add
 	}
 	return true, wtimer.Periodic
-	// or something like to increase the timerou
+	// or something like to increase the timeout
 	// return true, 2*h.Intvl()
 }
 
@@ -129,7 +129,7 @@ func startTimer(d *myData) {
 	}
 }
 
-func stopTimer(d* myData)  {
+func stopTimer(d *myData)  {
 	ok, err := timers.Del(&d.timer)
 	if !ok {
 		// timeoutHandler running right now  ...
@@ -144,16 +144,16 @@ Each timers has some configuration flags that can be set at Init() or
  Reset() time.
 The possible values are:
 
- - 0 (not flags set): the timer callback will be executed in one of the
- dedicated "workers"
+ - 0 (no flags set): the timer callback will be executed in one of the
+   dedicated "workers"
 
  - Ffast: the callback will be executed in the main goroutine that is
-  responsible for doing all the timers management. In this case the timer
-  should execute really fast since any delay will affect all other timers.
+   responsible for doing all the timers management. In this case the timer
+   should execute really fast since any delay will affect all other timers.
 
- - FGoR: the callback will be executed in its own separate temporary
- goroutine. Ideal for timers spending a lot of time or doing potentially
- blocking calls.
+ - FgoR: the callback will be executed in its own separate temporary
+   goroutine. Ideal for timers spending a lot of time or doing potentially
+   blocking calls.
 
 
 # Goroutines
@@ -174,6 +174,6 @@ based on the system time (will run each tick interval)
 
  * the timer latency is +/- 1 tick + an additional ~20ms
 
- * low values (less then 10ms) for ticks would cause an increase in
+ * low values (less than 10ms) for ticks would cause an increase in
    CPU usage when idle
 
