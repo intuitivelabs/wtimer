@@ -37,7 +37,7 @@ func (wt *WTimer) ticker() uint64 {
 		if DBGon() {
 			DBG("ticker: ticks ref value overflowing after %s"+
 				" (max ticks %d) -> re-adjusting\n",
-				now.Sub(wt.refTS), MaxTicksDiff)
+				now.Sub(wt.refTS), uint64(MaxTicksDiff))
 		}
 		// re-init, we risk overflowing the ticks
 		// new ref. ts = last tick ts

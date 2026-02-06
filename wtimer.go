@@ -401,7 +401,7 @@ func (wt *WTimer) addUnsafe(tl *TimerLnk, now Ticks) error {
 	delta, _ := wt.Ticks(tl.intvl)
 	if delta.Val() > MaxTicksDiff {
 		BUG("delta value is too high: %d ticks (%s) > max %d\n",
-			delta.Val(), tl.intvl, MaxTicksDiff)
+			delta.Val(), tl.intvl, uint64(MaxTicksDiff))
 		return ErrTicksTooHigh
 	}
 	// adjust expire in ticks since we might be called between ticks
@@ -427,7 +427,7 @@ func (wt *WTimer) addUnsafe(tl *TimerLnk, now Ticks) error {
 	dticks := wt.TicksRoundUp(expIntvl)
 	if dticks.Val() > (MaxTicksDiff - 1) {
 		BUG("adjusted delta value is too high: %d ticks > max %d\n",
-			dticks.Val(), MaxTicksDiff)
+			dticks.Val(), uint64(MaxTicksDiff))
 		return ErrTicksTooHigh
 	}
 	tl.expire = refTicks.Add(dticks)
