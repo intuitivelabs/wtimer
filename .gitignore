@@ -11,3 +11,6 @@ TAGS
 *.tar.gz
 *.deb
 *.rpm
+*.bak
+# Go workspace
+go.work

@@ -153,7 +153,7 @@ func TestWTimerInit(t *testing.T) {
 func TestWTimerStart(t *testing.T) {
 	var wt WTimer
 	var tl TimerLnk
-	var r uint64
+	var r atomic.Uint64
 	var start time.Time
 	var last time.Time
 	var exec [7]time.Duration
@@ -175,9 +175,10 @@ func TestWTimerStart(t *testing.T) {
 				now.Sub(last), now.Sub(start))
 			last = now
 		}
-		exec[r] = now.Sub(start)
-		r++
-		if r < 7 {
+		i := r.Add(1)
+		exec[i-1] = now.Sub(start)
+		// repeat run 7 times, then stop
+		if i < 7 {
 			return true, Periodic
 		}
 		return false, 0
@@ -201,9 +202,9 @@ func TestWTimerStart(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Add  failed with %q\n", err)
 	}
-	time.Sleep(150 * time.Millisecond)
-	if r != 7 {
-		t.Errorf("Timer executed only %d times\n", r)
+	time.Sleep(200 * time.Millisecond)
+	if r.Load() != 7 {
+		t.Errorf("Timer executed only %d times\n", r.Load())
 	}
 	if last.IsZero() {
 		t.Fatalf("Timer never executed\n")
@@ -332,7 +333,7 @@ func TestWTadvanceTimeTo(t *testing.T) {
 			delta = uint64(0)
 		}
 		crtTicks := uint64(rand.Int63())
-		wt.nowTicks = crtTicks // set start clock
+		wt.nowTicks.Store(crtTicks) // set start clock
 		now := wt.Now()
 		expire := now.AddUint64(delta)
 		wt.InitTimer(&tl, Ffast)

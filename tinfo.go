@@ -17,10 +17,11 @@ import (
 // It is accessed atomically.
 //
 // Internal encoding format:
-//   31    24    16      0
-//   | flgs | wNo | wIdx |
-// where flgs = flags, wNo = wheel number and wIdx = index inside the wheel.
 //
+//	31    24    16      0
+//	| flgs | wNo | wIdx |
+//
+// where flgs = flags, wNo = wheel number and wIdx = index inside the wheel.
 type tInfo struct {
 	atomicV uint32
 }
@@ -121,7 +122,7 @@ func (t *tInfo) getAll() (uint8, uint8, uint16) {
 	return uint8(f), uint8(w), uint16(idx)
 }
 
-// convert to string, usefull for debugging
+// convert to string, useful for debugging
 func (t tInfo) String() string {
 	f, w, i := t.getAll()
 	return fmt.Sprintf("%02x:%02x:%d", f, w, i)

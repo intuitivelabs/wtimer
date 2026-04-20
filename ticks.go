@@ -23,7 +23,7 @@ const (
 // It represents monotonically increased timer ticks.
 // It has no 0 or reference value.
 // 2 Ticks can be compared as long as the difference between them is strictly
-// less then MaxTicksDiff (as long as the difference between them produces no
+// less than MaxTicksDiff (as long as the difference between them produces no
 // "sign" when represented on TicksBits bits).
 //
 // Operation on Ticks should be performed only using its methods
@@ -38,7 +38,7 @@ func NewTicks(u uint64) Ticks {
 }
 
 // diffWrap returns true if t interpreted as a Ticks difference
-// would wrap-arround.
+// would wrap-around.
 func (t Ticks) diffWrap() bool {
 	return (t.v & MaxTicksDiff) != 0 // or t >= MaxTicksDiff
 }

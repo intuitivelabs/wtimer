@@ -13,7 +13,7 @@ import (
 const Periodic time.Duration = time.Duration(^int64(0))
 
 // A TimerHandlerF is a callback called when a timer expires.
-// The parameters passed are  a pointer to the timing wheel to which it
+// The parameters passed are a pointer to the timing wheel to which it
 // belongs (WTimer), the handler of the expired running timer,
 // and an opaque parameter passed when the timer was registered.
 // The callback should return true and a new expire delta (time.Duration) if

@@ -30,8 +30,7 @@ func (wt *WTimer) startRQ() {
 func (wt *WTimer) Start() {
 	wt.cancel = make(chan struct{})
 	wt.lastTickT = timestamp.Now()
-	wt.refTS = wt.lastTickT
-	wt.refTicks = wt.Now()
+	wt.refWrite(wt.lastTickT, wt.Now().Val())
 	wt.startRQ()
 	wt.wg.Add(1)
 	go func() {
@@ -41,7 +40,7 @@ func (wt *WTimer) Start() {
 		//				wt.tickDuration, time.Now())
 		//		}
 		wt.lastTickT = timestamp.Now()
-		wt.refTS = wt.lastTickT
+		wt.refWrite(wt.lastTickT, wt.Now().Val())
 		ticker := time.NewTicker(wt.tickDuration)
 	loop:
 		for {
