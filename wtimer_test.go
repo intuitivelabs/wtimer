@@ -87,7 +87,7 @@ func TestWTimerInit(t *testing.T) {
 		}
 		tsz += sz
 	}
-	if tsz != wTotalEntries || tsz != len(wt.wlists) {
+	if tsz != wTotalEntries || wTotalEntries != len(wt.wlists) {
 		t.Errorf("WTimer: wrong total wheel entries: %d\n", tsz)
 	}
 
